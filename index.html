@@ -558,7 +558,7 @@ const ROOM_GROUPS = [
     group: '본당',
     rooms: [
       {id:'r1', name:'본당 자모실',          icon:'🙏'},
-      {id:'r2', name:'본당 1층 1',           icon:'🏛️'},
+      {id:'r2', name:'유아부실',              icon:'🍼'},
       {id:'r3', name:'본당 1층 2',           icon:'🏛️'},
       {id:'r4', name:'본당 2층 1',           icon:'🏛️'},
       {id:'r5', name:'본당 1층 기도실(구 유년부실)', icon:'🙌'},
@@ -815,6 +815,9 @@ function addRoom(){
   rooms=getCurRooms();
   document.getElementById('newRoomIcon').value='';
   document.getElementById('newRoomName').value='';
+  buildRoomGrid();
+  buildFilterOptions();
+  fbSaveGlobalSettings();
   renderRoomListSettings();
   showToast('✅ 장소가 추가되었습니다','ok');
 }
@@ -836,8 +839,11 @@ function saveEditRoom(){
   d.rooms[i].name=document.getElementById('editRoomName').value.trim()||d.rooms[i].name;
   rooms=getCurRooms();
   closeModal('editRoomModal');
+  buildRoomGrid();
+  buildFilterOptions();
+  fbSaveGlobalSettings();
   renderRoomListSettings();
-  showToast('수정되었습니다','ok');
+  showToast('✅ 수정되었습니다','ok');
 }
 function openDelRoom(id){
   delRoomId=id;
@@ -853,6 +859,9 @@ function confirmDelRoom(){
   rooms=getCurRooms();
   closeModal('delRoomModal');
   delRoomId=null;
+  buildRoomGrid();
+  buildFilterOptions();
+  fbSaveGlobalSettings();
   renderRoomListSettings();
   showToast('삭제되었습니다');
 }
