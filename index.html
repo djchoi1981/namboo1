@@ -799,8 +799,8 @@ function renderRoomListSettings(){
            <span class="room-list-icon">${r.icon}</span>
            <span class="room-list-name">${r.name}</span>
            <div class="room-list-btns">
-             <button class="btn-edit-room" onclick="openEditRoom('\''${r.id}'\'')" >수정</button>
-             <button class="btn-del-room" onclick="openDelRoom('\''${r.id}'\'')" >삭제</button>
+             <button class="btn-edit-room" onclick="openEditRoom(this.dataset.id)" data-id="${r.id}">수정</button>
+             <button class="btn-del-room" onclick="openDelRoom(this.dataset.id)" data-id="${r.id}">삭제</button>
            </div>
          </div>`).join('')
     );
