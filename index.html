@@ -1126,10 +1126,11 @@ function selectDur(n){selDur=n; clampDur(); updateTimeResult();}
 function clampDur(){
   if(!selStart)return;
   const sidx=SLOTS.indexOf(selStart);
+  if(sidx<0){selStart=null;selDur=0;return;}
   const mx=Math.min(4,SLOTS.length-1-sidx);
   if(selDur>mx){
-    selDur=Math.max(1,mx);
-    dialDurIdx=selDur-1;
+    selDur=mx; // mx=0이면 selDur=0 → 선택 초기화
+    dialDurIdx=Math.max(0,selDur-1);
     // 다이얼 시각도 동기화
     const durDial=document.getElementById('dialDur');
     if(durDial){
@@ -1143,6 +1144,13 @@ function clampDur(){
           el.className='dial-item'+(i===dialDurIdx?' active':diff===1?' near':'');
         });
       }
+    }
+    // selDur=0이면 버튼 초기화
+    if(selDur===0){
+      const lbl=document.getElementById('timePickerLabel');
+      const btn=document.getElementById('timePickerBtn');
+      if(lbl) lbl.textContent='시간을 선택하세요';
+      if(btn) btn.style.borderColor='var(--border)';
     }
   }
 }
@@ -1374,8 +1382,10 @@ buildDistrictSelect();
 buildFilterOptions();
 document.getElementById('resDate').value=new Date().toISOString().split('T')[0];
 document.getElementById('resDate').addEventListener('change',()=>{
-  selRoom&&refreshSlots();
+  clampDur();           // selStart/selDur 범위 재검증
+  updateTimeResult();   // 결과 표시 갱신
   updateTimePickerBtn();
+  selRoom&&refreshSlots();
 });
 initCal();
 // 기본값: 12:00 시작, 1시간
