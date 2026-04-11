@@ -558,7 +558,7 @@ const ROOM_GROUPS = [
     group: '본당',
     rooms: [
       {id:'r1', name:'본당 자모실',          icon:'🙏'},
-      {id:'r2', name:'유아부실',              icon:'🍼'},
+      {id:'r2', name:'본당 1층 1',            icon:'🏛️'},
       {id:'r3', name:'본당 1층 2',           icon:'🏛️'},
       {id:'r4', name:'본당 2층 1',           icon:'🏛️'},
       {id:'r5', name:'본당 1층 기도실(구 유년부실)', icon:'🙌'},
@@ -766,12 +766,20 @@ function buildRoomGrid(){
     grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:18px;color:var(--text-muted);font-size:13px;">등록된 장소가 없습니다</div>`;
     return;
   }
+  // 그룹 순서: ROOM_GROUPS 기준, 실제 이름/아이콘은 rooms[]에서 가져옴
+  const groupOrder=ROOM_GROUPS.map(g=>g.group);
+  const grouped={};
+  groupOrder.forEach(g=>{grouped[g]=[];});
+  rooms.forEach(r=>{
+    const g=r.group||'기타';
+    if(!grouped[g]) grouped[g]=[];
+    grouped[g].push(r);
+  });
   let html='';
-  ROOM_GROUPS.forEach(g=>{
-    const gRooms=g.rooms.filter(r=>rooms.find(x=>x.id===r.id));
-    if(!gRooms.length)return;
-    html+=`<div style="grid-column:1/-1;font-size:11px;font-weight:800;color:var(--primary);margin:6px 0 2px;letter-spacing:.5px;">📍 ${g.group}</div>`;
-    html+=gRooms.map(r=>
+  groupOrder.forEach(g=>{
+    if(!grouped[g]||!grouped[g].length)return;
+    html+=`<div style="grid-column:1/-1;font-size:11px;font-weight:800;color:var(--primary);margin:6px 0 2px;letter-spacing:.5px;">📍 ${g}</div>`;
+    html+=grouped[g].map(r=>
       `<button class="room-btn" id="rb_${r.id}" onclick="selectRoom('${r.id}')">
          <span class="ri">${r.icon}</span>${r.name}
        </button>`).join('');
