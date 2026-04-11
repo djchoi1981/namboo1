@@ -206,6 +206,7 @@ input[type="file"]{display:none;}
 .dial-item.active{color:var(--primary);font-size:19px;font-weight:800;}
 .dial-item.near{color:#555;font-size:15px;font-weight:700;}
 .dial-item.booked{color:#e88;text-decoration:line-through;}
+.dial-item.disabled{cursor:not-allowed;opacity:.6;}
 .dial-mask-top,.dial-mask-bottom{position:absolute;left:0;width:100%;height:78px;z-index:2;pointer-events:none;}
 .dial-mask-top{top:0;background:linear-gradient(to bottom,rgba(247,247,245,0.95) 0%,rgba(247,247,245,0) 100%);}
 .dial-mask-bottom{bottom:0;background:linear-gradient(to top,rgba(247,247,245,0.95) 0%,rgba(247,247,245,0) 100%);}
@@ -265,6 +266,12 @@ input[type="file"]{display:none;}
     </div>
     <div class="card">
       <div class="card-title">✍️ 예약 정보</div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>교구</label>
+        <select id="districtName">
+          <option value="">-- 교구 선택 --</option>
+        </select>
+      </div>
       <div class="form-row" style="margin-bottom:10px;">
         <div class="form-group">
           <label>셀 이름</label>
@@ -381,7 +388,18 @@ input[type="file"]{display:none;}
         <button onclick="changeAdminPw()" style="margin-top:10px;background:var(--primary-light);color:var(--primary);border:1.5px solid var(--primary);border-radius:9px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">🔑 비밀번호 변경</button>
       </div>
       <div class="card">
-        <div class="set-section-title">🏠 구역별 장소 관리</div>
+        <div class="set-section-title">⛪ 교구 관리</div>
+        <div id="districtListSettings"></div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+          <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:8px;">새 교구 추가</div>
+          <div style="display:flex;gap:7px;">
+            <input type="text" id="newDistrictName" placeholder="예: 4교구" style="flex:1;" />
+            <button class="btn-add-room" onclick="addDistrict()">추가</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="set-section-title">🏠 장소 관리</div>
         <div id="roomListSettings"></div>
         <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
           <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:8px;">새 장소 추가</div>
@@ -581,6 +599,7 @@ let cancelId=null, adminDelId=null, editRoomId=null, delRoomId=null;
 let calYear, calMonth, selCalDate=null, currentTab='book';
 let isAdminLoggedIn=false;
 let districts=[];
+let districtsList=['1교구','2교구','3교구']; // 교구 목록
 function getCurRooms(){ return districts[0]?districts[0].rooms:[]; }
 
 /* ── 관리자 비밀번호 ── */
@@ -609,7 +628,8 @@ function fbSaveGlobalSettings(){
     title: settings.title||'셀모임 장소 예약',
     subtitle: settings.subtitle||'남부전원교회 · 30분 단위 · 최대 2시간',
     logo: settings.logo||DEFAULT_LOGO,
-    rooms: getCurRooms()
+    rooms: getCurRooms(),
+    districtsList: districtsList
   });
 }
 function startSettingsListener(){
@@ -621,10 +641,12 @@ function startSettingsListener(){
     settings.subtitle=d.subtitle||settings.subtitle;
     settings.logo=d.logo||settings.logo;
     if(d.rooms&&Array.isArray(d.rooms)) districts[0].rooms=d.rooms;
+    if(d.districtsList&&Array.isArray(d.districtsList)) districtsList=d.districtsList;
     rooms=getCurRooms();
     applySettings();
     buildRoomGrid();
     buildFilterOptions();
+    buildDistrictSelect();
     if(isAdminLoggedIn) renderRoomListSettings();
   });
 }
@@ -768,6 +790,7 @@ function selectRoom(id){
 /* ── Settings – room list ── */
 function renderRoomListSettings(){
   rooms=getCurRooms();
+  renderDistrictListSettings();
   document.getElementById('roomListSettings').innerHTML=
     (rooms.length===0
       ? `<div style="font-size:13px;color:var(--text-muted);padding:12px 0;">등록된 장소가 없습니다</div>`
@@ -833,6 +856,64 @@ function confirmDelRoom(){
   renderRoomListSettings();
   showToast('삭제되었습니다');
 }
+function buildDistrictSelect(){
+  const sel=document.getElementById('districtName');
+  if(!sel)return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">-- 교구 선택 --</option>';
+  districtsList.forEach(function(d){
+    const o=document.createElement('option');
+    o.value=d; o.textContent=d;
+    if(d===cur) o.selected=true;
+    sel.appendChild(o);
+  });
+}
+
+/* ── 교구 설정 관리 ── */
+function renderDistrictListSettings(){
+  const el=document.getElementById('districtListSettings');
+  if(!el)return;
+  el.innerHTML=districtsList.length===0
+    ?'<div style="font-size:13px;color:var(--text-muted);padding:8px 0;">등록된 교구가 없습니다</div>'
+    :districtsList.map((d,i)=>
+      `<div class="room-list-item">
+         <span class="room-list-icon">⛪</span>
+         <span class="room-list-name">${d}</span>
+         <div class="room-list-btns">
+           <button class="btn-edit-room" onclick="openEditDistrict(${i})">수정</button>
+           <button class="btn-del-room" onclick="deleteDistrict(${i})">삭제</button>
+         </div>
+       </div>`).join('');
+}
+function addDistrict(){
+  const inp=document.getElementById('newDistrictName');
+  const name=inp.value.trim();
+  if(!name){showToast('교구명을 입력해주세요','err');return;}
+  if(districtsList.includes(name)){showToast('이미 존재하는 교구입니다','err');return;}
+  districtsList.push(name);
+  inp.value='';
+  renderDistrictListSettings();
+  buildDistrictSelect();
+  showToast('✅ 교구가 추가되었습니다','ok');
+}
+function openEditDistrict(idx){
+  const name=prompt('교구명 수정:', districtsList[idx]);
+  if(!name||!name.trim())return;
+  const trimmed=name.trim();
+  if(districtsList.includes(trimmed)&&districtsList[idx]!==trimmed){showToast('이미 존재하는 교구입니다','err');return;}
+  districtsList[idx]=trimmed;
+  renderDistrictListSettings();
+  buildDistrictSelect();
+  showToast('수정되었습니다','ok');
+}
+function deleteDistrict(idx){
+  if(!confirm(`"${districtsList[idx]}" 교구를 삭제하시겠습니까?`))return;
+  districtsList.splice(idx,1);
+  renderDistrictListSettings();
+  buildDistrictSelect();
+  showToast('삭제되었습니다');
+}
+
 function saveSettings(){
   settings.title=document.getElementById('setTitle').value.trim()||'셀모임 장소 예약';
   settings.subtitle=document.getElementById('setSubtitle').value.trim()||'남부전원교회 · 30분 단위 · 최대 2시간';
@@ -841,6 +922,7 @@ function saveSettings(){
   applySettings();
   buildRoomGrid();
   buildFilterOptions();
+  buildDistrictSelect();
   renderRoomListSettings();
   showToast('✅ 설정이 저장되었습니다 (모두에게 적용)','ok');
 }
@@ -863,8 +945,12 @@ let dialStartIdx=6, dialDurIdx=1; // 기본: 12:00, 1시간
 
 /* ── 팝업 열기/확인 ── */
 function openTimePicker(){
+  var date=document.getElementById('resDate').value;
+  var bookedSet=(selRoom&&date)?getBookedSet(selRoom,date):new Set();
+  var disIdx=new Set();
+  SLOTS.forEach(function(s,i){ if(bookedSet.has(s)) disIdx.add(i); });
   buildDial('dialStart','dialStartList',
-    SLOTS.map(s=>s), dialStartIdx, onDialStartChange);
+    SLOTS.map(s=>s), dialStartIdx, onDialStartChange, disIdx);
   buildDial('dialDur','dialDurList',
     DUR_ITEMS.map(d=>d.label), dialDurIdx, onDialDurChange);
   updateTpPreview();
@@ -888,7 +974,8 @@ function onDialDurChange(idx){
 }
 
 /* ── 단일 다이얼 빌더 ── */
-function buildDial(wrapId, listId, labels, activeIdx, onChange){
+function buildDial(wrapId, listId, labels, activeIdx, onChange, disabledIdx){
+  if(!disabledIdx) disabledIdx=new Set();
   const pad=3;
   const oldWrap=document.getElementById(wrapId);
   const newWrap=oldWrap.cloneNode(true);
@@ -910,15 +997,16 @@ function buildDial(wrapId, listId, labels, activeIdx, onChange){
     for(let i=0;i<pad;i++) html+='<div class="dial-item" style="height:'+ITEM_H+'px"></div>';
     labels.forEach((lbl,i)=>{
       const diff=Math.abs(i-idx);
-      const cls='dial-item'+(i===idx?' active':diff===1?' near':'');
-      html+='<div class="'+cls+'" style="height:'+ITEM_H+'px" data-idx="'+i+'">'+lbl+'</div>';
+      const dis=disabledIdx.has(i);
+      const cls='dial-item'+(dis?' booked':i===idx?' active':diff===1?' near':'')+(dis?' disabled':'');
+      html+='<div class="'+cls+'" style="height:'+ITEM_H+'px" data-idx="'+i+'" '+(dis?'data-disabled="1"':'')+'>'+lbl+'</div>';
     });
     for(let i=0;i<pad;i++) html+='<div class="dial-item" style="height:'+ITEM_H+'px"></div>';
     listEl.innerHTML=html;
     listEl.style.transition='none';
     listEl.style.transform='translateY('+posFor(idx)+'px)';
     listEl.querySelectorAll('[data-idx]').forEach(function(el){
-      el.addEventListener('click',function(){ snap(parseInt(el.dataset.idx)); });
+      el.addEventListener('click',function(){ if(el.dataset.disabled) return; snap(parseInt(el.dataset.idx)); });
     });
   }
 
@@ -927,12 +1015,20 @@ function buildDial(wrapId, listId, labels, activeIdx, onChange){
     listEl.querySelectorAll('[data-idx]').forEach(function(el){
       var i=parseInt(el.dataset.idx);
       var diff=Math.abs(i-idx);
-      el.className='dial-item'+(i===idx?' active':diff===1?' near':'');
+      var dis=disabledIdx.has(i);
+      el.className='dial-item'+(dis?' booked disabled':i===idx?' active':diff===1?' near':'');
     });
   }
 
   function snap(idx){
     idx=Math.max(0,Math.min(labels.length-1,idx));
+    if(disabledIdx.has(idx)){
+      var best=-1, bestDist=Infinity;
+      for(var ii=0;ii<labels.length;ii++){
+        if(!disabledIdx.has(ii)){var d=Math.abs(ii-idx);if(d<bestDist){bestDist=d;best=ii;}}
+      }
+      if(best>=0) idx=best; else return;
+    }
     listEl.style.transition='transform .2s cubic-bezier(.4,0,.2,1)';
     listEl.style.transform='translateY('+posFor(idx)+'px)';
     setTimeout(function(){ render(idx); onChange(idx); },210);
@@ -1040,12 +1136,14 @@ function updateTimeResult(){const el=document.getElementById('timeResult');if(!s
 
 /* ── Submit ── */
 function submitReservation(){
+  const districtName=document.getElementById('districtName').value;
   const cellName=document.getElementById('cellName').value.trim();
   const personName=document.getElementById('personName').value.trim();
   const pin=document.getElementById('cancelPin').value.trim();
   const date=document.getElementById('resDate').value;
   if(!selRoom){showToast('장소를 선택해주세요','err');return;}
   if(!date){showToast('날짜를 선택해주세요','err');return;}
+  if(!districtName){showToast('교구를 선택해주세요','err');return;}
   if(!cellName){showToast('셀 이름을 입력해주세요','err');return;}
   if(!personName){showToast('예약자 이름을 입력해주세요','err');return;}
   if(!/^\d{4}$/.test(pin)){showToast('취소 비밀번호는 숫자 4자리입니다','err');return;}
@@ -1056,7 +1154,7 @@ function submitReservation(){
     room:selRoom, roomName:room.name,
     date, startSlot:selStart, endSlot:getEndSlot(),
     durSlots:selDur, durLabel:DUR_LABEL[selDur],
-    cellName, personName,
+    districtName, cellName, personName,
     cancelPw: pin,
     createdAt: new Date().toISOString()
   });
@@ -1064,6 +1162,7 @@ function submitReservation(){
   selRoom=null;selStart=SLOTS[0];selDur=1;
   dialStartIdx=0;dialDurIdx=0;
   document.querySelectorAll('.room-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('districtName').value='';
   ['cellName','personName','cancelPin'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('timeResult').className='time-result';
   document.getElementById('timePickerLabel').textContent='시간을 선택하세요';
@@ -1103,7 +1202,7 @@ function renderList(){
   let list=[...reservations];
   if(fr)list=list.filter(r=>r.room===fr);
   if(fd)list=list.filter(r=>r.date===fd);
-  if(fs)list=list.filter(r=>r.cellName.toLowerCase().includes(fs)||r.personName.toLowerCase().includes(fs));
+  if(fs)list=list.filter(r=>(r.districtName||'').toLowerCase().includes(fs)||r.cellName.toLowerCase().includes(fs)||r.personName.toLowerCase().includes(fs));
   list.sort((a,b)=>{
     const now=new Date().toISOString().slice(0,16).replace('T',' ');
     const aKey=a.date+' '+a.startSlot;
@@ -1131,7 +1230,7 @@ function renderList(){
           <span class="badge badge-time">⏰ ${r.startSlot}~${r.endSlot}</span>
           ${past?'<span class="badge badge-done">완료</span>':''}
         </div>
-        <div class="res-main">${r.cellName} · ${r.personName}</div>
+        <div class="res-main">${r.districtName?r.districtName+' · ':''}${r.cellName} · ${r.personName}</div>
         <div class="res-sub">📅 ${ds} · ${r.durLabel}</div>
       </div>
       <div class="res-actions">${cancelBtn}${adminBtn}</div>
@@ -1254,6 +1353,7 @@ document.getElementById('adminPinInput').addEventListener('keydown',e=>{if(e.key
 loadLocalSettings();
 applySettings();
 buildRoomGrid();
+buildDistrictSelect();
 buildFilterOptions();
 document.getElementById('resDate').value=new Date().toISOString().split('T')[0];
 document.getElementById('resDate').addEventListener('change',()=>{
