@@ -193,6 +193,12 @@ input[type="file"]{display:none;}
 .btn-danger{background:var(--danger)!important;}
 
 /* ── Toast ── */
+/* ── Notice ── */
+.notice-box{background:var(--warn-bg);border:1.5px solid var(--gold);border-radius:12px;padding:13px 15px;margin-bottom:14px;display:none;}
+.notice-box.has-content{display:block;}
+.notice-title{font-size:12px;font-weight:800;color:#8A5C00;margin-bottom:5px;display:flex;align-items:center;gap:5px;}
+.notice-body{font-size:13px;color:#5a4000;line-height:1.65;white-space:pre-wrap;word-break:break-word;}
+
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:#1e2a1e;color:white;padding:11px 22px;border-radius:22px;font-size:14px;font-weight:600;z-index:1000;transition:transform .25s ease;white-space:nowrap;box-shadow:0 4px 18px rgba(0,0,0,.22);}
 .toast.show{transform:translateX(-50%) translateY(0);}
 .toast.ok{background:var(--success);}
@@ -248,6 +254,10 @@ input[type="file"]{display:none;}
     <div class="card">
       <div class="card-title">🏠 장소 선택</div>
       <div class="room-grid" id="roomGrid"></div>
+    </div>
+    <div class="notice-box" id="noticeBox">
+      <div class="notice-title">📢 공지사항</div>
+      <div class="notice-body" id="noticeBody"></div>
     </div>
     <div class="card">
       <div class="card-title">📅 날짜</div>
@@ -408,6 +418,13 @@ input[type="file"]{display:none;}
             <input type="text" id="newRoomName" placeholder="장소명 입력" />
             <button class="btn-add-room" onclick="addRoom()">추가</button>
           </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="set-section-title">📢 공지사항 관리</div>
+        <div class="form-group">
+          <label>공지 내용 <span style="font-weight:400;color:var(--text-muted);">(비워두면 숨김)</span></label>
+          <textarea id="setNotice" rows="4" placeholder="예약 시 주의사항, 이용 안내 등을 입력하세요..."></textarea>
         </div>
       </div>
       <button class="btn-save-settings" onclick="saveSettings()">✅ 설정 저장 (Firebase 동기화)</button>
@@ -612,8 +629,8 @@ function loadLocalSettings(){
   try{
     const s=localStorage.getItem('cell_settings');
     if(s)settings=JSON.parse(s);
-    else settings={title:'셀모임 장소 예약',subtitle:'남부전원교회 · 30분 단위 · 최대 2시간',logo:DEFAULT_LOGO};
-  }catch(e){settings={title:'셀모임 장소 예약',subtitle:'남부전원교회 · 30분 단위 · 최대 2시간',logo:DEFAULT_LOGO};}
+    else settings={title:'셀모임 장소 예약',subtitle:'남부전원교회 · 30분 단위 · 최대 2시간',logo:DEFAULT_LOGO,notice:''};
+  }catch(e){settings={title:'셀모임 장소 예약',subtitle:'남부전원교회 · 30분 단위 · 최대 2시간',logo:DEFAULT_LOGO,notice:''};}
   districts=JSON.parse(JSON.stringify(DEFAULT_DISTRICTS));
   rooms = getCurRooms();
 }
@@ -629,7 +646,8 @@ function fbSaveGlobalSettings(){
     subtitle: settings.subtitle||'남부전원교회 · 30분 단위 · 최대 2시간',
     logo: settings.logo||DEFAULT_LOGO,
     rooms: getCurRooms(),
-    districtsList: districtsList
+    districtsList: districtsList,
+    notice: settings.notice||''
   });
 }
 function startSettingsListener(){
@@ -642,6 +660,7 @@ function startSettingsListener(){
     settings.logo=d.logo||settings.logo;
     if(d.rooms&&Array.isArray(d.rooms)) districts[0].rooms=d.rooms;
     if(d.districtsList&&Array.isArray(d.districtsList)) districtsList=d.districtsList;
+    if(d.notice!==undefined) settings.notice=d.notice;
     rooms=getCurRooms();
     applySettings();
     buildRoomGrid();
@@ -749,6 +768,14 @@ function applySettings(){
   document.getElementById('settingsLogoPreview').src=logo;
   document.getElementById('setTitle').value=settings.title||'';
   document.getElementById('setSubtitle').value=settings.subtitle||'';
+  // 공지 반영
+  const noticeText=settings.notice||'';
+  const noticeBox=document.getElementById('noticeBox');
+  const noticeBody=document.getElementById('noticeBody');
+  const setNotice=document.getElementById('setNotice');
+  if(noticeBox) noticeBox.className='notice-box'+(noticeText?' has-content':'');
+  if(noticeBody) noticeBody.textContent=noticeText;
+  if(setNotice) setNotice.value=noticeText;
 }
 function onLogoFile(input){const f=input.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{settings.logo=e.target.result;document.getElementById('logoImg').src=settings.logo;document.getElementById('settingsLogoPreview').src=settings.logo;};r.readAsDataURL(f);}
 function resetLogo(){settings.logo=DEFAULT_LOGO;['logoImg','settingsLogoPreview'].forEach(id=>document.getElementById(id).src=DEFAULT_LOGO);}
@@ -934,6 +961,7 @@ function deleteDistrict(idx){
 function saveSettings(){
   settings.title=document.getElementById('setTitle').value.trim()||'셀모임 장소 예약';
   settings.subtitle=document.getElementById('setSubtitle').value.trim()||'남부전원교회 · 30분 단위 · 최대 2시간';
+  settings.notice=document.getElementById('setNotice').value.trim();
   saveLocalSettings();
   fbSaveGlobalSettings();
   applySettings();
