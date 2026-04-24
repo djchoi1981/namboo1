@@ -276,16 +276,10 @@ input[type="file"]{display:none;}
     </div>
     <div class="card">
       <div class="card-title">✍️ 예약 정보</div>
-      <div class="form-group" style="margin-bottom:10px;">
-        <label>교구</label>
-        <select id="districtName">
-          <option value="">-- 교구 선택 --</option>
-        </select>
-      </div>
       <div class="form-row" style="margin-bottom:10px;">
         <div class="form-group">
-          <label>셀 이름</label>
-          <input type="text" id="cellName" placeholder="예: 1셀, 믿음셀..." />
+          <label>모임명</label>
+          <input type="text" id="cellName" placeholder="예: 믿음모임, 소망셀..." />
         </div>
         <div class="form-group">
           <label>예약자 이름</label>
@@ -1189,15 +1183,13 @@ function updateTimeResult(){const el=document.getElementById('timeResult');if(!s
 
 /* ── Submit ── */
 function submitReservation(){
-  const districtName=document.getElementById('districtName').value;
   const cellName=document.getElementById('cellName').value.trim();
   const personName=document.getElementById('personName').value.trim();
   const pin=document.getElementById('cancelPin').value.trim();
   const date=document.getElementById('resDate').value;
   if(!selRoom){showToast('장소를 선택해주세요','err');return;}
   if(!date){showToast('날짜를 선택해주세요','err');return;}
-  if(!districtName){showToast('교구를 선택해주세요','err');return;}
-  if(!cellName){showToast('셀 이름을 입력해주세요','err');return;}
+  if(!cellName){showToast('모임명을 입력해주세요','err');return;}
   if(!personName){showToast('예약자 이름을 입력해주세요','err');return;}
   if(!/^\d{4}$/.test(pin)){showToast('취소 비밀번호는 숫자 4자리입니다','err');return;}
   if(!getEndSlot()){showToast('시간 범위를 초과했습니다','err');return;}
@@ -1207,7 +1199,7 @@ function submitReservation(){
     room:selRoom, roomName:room.name,
     date, startSlot:selStart, endSlot:getEndSlot(),
     durSlots:selDur, durLabel:DUR_LABEL[selDur],
-    districtName, cellName, personName,
+    cellName, personName,
     cancelPw: pin,
     createdAt: new Date().toISOString()
   });
@@ -1215,7 +1207,6 @@ function submitReservation(){
   selRoom=null;selStart=SLOTS[0];selDur=1;
   dialStartIdx=0;dialDurIdx=0;
   document.querySelectorAll('.room-btn').forEach(b=>b.classList.remove('selected'));
-  document.getElementById('districtName').value='';
   ['cellName','personName','cancelPin'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('timeResult').className='time-result';
   document.getElementById('timePickerLabel').textContent='시간을 선택하세요';
@@ -1255,7 +1246,7 @@ function renderList(){
   let list=[...reservations];
   if(fr)list=list.filter(r=>r.room===fr);
   if(fd)list=list.filter(r=>r.date===fd);
-  if(fs)list=list.filter(r=>(r.districtName||'').toLowerCase().includes(fs)||r.cellName.toLowerCase().includes(fs)||r.personName.toLowerCase().includes(fs));
+  if(fs)list=list.filter(r=>r.cellName.toLowerCase().includes(fs)||r.personName.toLowerCase().includes(fs));
   list.sort((a,b)=>{
     const now=new Date().toISOString().slice(0,16).replace('T',' ');
     const aKey=a.date+' '+a.startSlot;
@@ -1283,7 +1274,7 @@ function renderList(){
           <span class="badge badge-time">⏰ ${r.startSlot}~${r.endSlot}</span>
           ${past?'<span class="badge badge-done">완료</span>':''}
         </div>
-        <div class="res-main">${r.districtName?r.districtName+' · ':''}${r.cellName} · ${r.personName}</div>
+        <div class="res-main">${r.cellName} · ${r.personName}</div>
         <div class="res-sub">📅 ${ds} · ${r.durLabel}</div>
       </div>
       <div class="res-actions">${cancelBtn}${adminBtn}</div>
