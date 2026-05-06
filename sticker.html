@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>카카오 이모티콘 스티커 시트 생성기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@700;800&family=Black+Han+Sans&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --kakao:#FEE500;--kakao-dark:#D4BA00;
+  --brown:#3D1F00;--navy:#1E3A6E;
+  --cream:#FFFDF7;--pink:#FFE0E6;
+  --bg:#F7F3EE;--card:#FFFFFF;
+  --text:#2B1A00;--muted:#8A7060;
+  --radius:20px;
+}
+body{font-family:'Nanum Gothic','Apple SD Gothic Neo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ── Header ── */
+.header{
+  background:linear-gradient(135deg,#FFE500 0%,#FFD000 100%);
+  padding:20px 24px;text-align:center;
+  box-shadow:0 4px 16px rgba(0,0,0,0.12);
+  position:sticky;top:0;z-index:50
+}
+.header h1{font-family:'Black Han Sans',sans-serif;font-size:24px;color:#3D1F00;letter-spacing:-0.5px}
+.header p{font-size:13px;color:#6B4C00;margin-top:4px}
+
+/* ── Main container ── */
+.container{max-width:900px;margin:0 auto;padding:28px 20px 60px}
+
+/* ── Upload zone ── */
+.upload-section{background:white;border-radius:var(--radius);padding:32px;box-shadow:0 4px 24px rgba(0,0,0,0.07);margin-bottom:24px}
+.upload-section h2{font-size:17px;color:var(--navy);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.upload-zone{
+  border:3px dashed #E0D5C8;border-radius:16px;
+  padding:40px 24px;text-align:center;cursor:pointer;
+  background:var(--cream);transition:all .25s
+}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--kakao-dark);background:#FFFDE8}
+.upload-zone .icon{font-size:52px;line-height:1;margin-bottom:12px}
+.upload-zone p{color:var(--muted);font-size:14px;line-height:1.6}
+.upload-zone strong{color:var(--navy);font-size:15px}
+#fileInput{display:none}
+
+/* ── Photo preview ── */
+.preview-row{display:flex;gap:16px;align-items:flex-start;margin-top:20px}
+.preview-box{
+  width:120px;height:120px;border-radius:50%;
+  border:4px solid var(--kakao);overflow:hidden;
+  flex-shrink:0;display:none;
+  box-shadow:0 4px 16px rgba(0,0,0,0.15)
+}
+.preview-box img{width:100%;height:100%;object-fit:cover}
+.preview-info{flex:1;display:none}
+.preview-info .filename{font-weight:800;font-size:15px;color:var(--text)}
+.preview-info .hint{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.6}
+.btn-change{
+  display:inline-block;margin-top:10px;padding:8px 18px;
+  background:var(--bg);border:2px solid #D0C5B8;
+  border-radius:30px;font-size:13px;cursor:pointer;font-family:inherit;
+  color:var(--brown);transition:all .2s;font-weight:700
+}
+.btn-change:hover{background:#EDE5DC;border-color:#B8A898}
+
+/* ── Controls ── */
+.controls{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px}
+.btn-main{
+  flex:1;min-width:200px;padding:18px 32px;
+  background:linear-gradient(135deg,#FFE500 0%,#FFD000 100%);
+  color:var(--brown);font-family:'Black Han Sans',sans-serif;
+  font-size:18px;border:none;border-radius:14px;cursor:pointer;
+  box-shadow:0 6px 20px rgba(255,208,0,0.4);transition:all .25s
+}
+.btn-main:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 28px rgba(255,208,0,0.5)}
+.btn-main:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-dl{
+  padding:18px 28px;background:var(--navy);color:white;
+  font-family:'Black Han Sans',sans-serif;font-size:17px;
+  border:none;border-radius:14px;cursor:pointer;
+  box-shadow:0 6px 20px rgba(30,58,110,0.3);transition:all .25s;
+  display:none
+}
+.btn-dl:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(30,58,110,0.4)}
+
+/* ── Progress ── */
+.progress-wrap{display:none;background:white;border-radius:var(--radius);padding:24px;box-shadow:0 4px 24px rgba(0,0,0,0.07);margin-bottom:24px}
+.progress-label{font-size:14px;color:var(--muted);margin-bottom:10px}
+.progress-bar-bg{height:10px;background:#F0E8E0;border-radius:10px;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,#FFE500,#FFD000);border-radius:10px;width:0;transition:width .3s}
+.progress-step{font-weight:800;font-size:15px;color:var(--navy);margin-bottom:6px}
+
+/* ── Sheet preview ── */
+.sheet-section{display:none;background:white;border-radius:var(--radius);padding:24px;box-shadow:0 4px 24px rgba(0,0,0,0.07)}
+.sheet-section h2{font-size:17px;color:var(--navy);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.canvas-wrap{
+  background:#F0EBE3;border-radius:14px;overflow:hidden;
+  display:flex;justify-content:center;align-items:center;padding:12px
+}
+#stickerCanvas{
+  width:100%;max-width:760px;height:auto;
+  border-radius:10px;display:block;
+  box-shadow:0 8px 32px rgba(0,0,0,0.15)
+}
+
+/* ── Mode badge ── */
+.mode-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 14px;border-radius:30px;font-size:12px;font-weight:800;
+  margin-bottom:16px
+}
+.mode-photo{background:#E8F4FF;color:#1A5BA6}
+.mode-demo{background:#FFF3E0;color:#B06000}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🎨 카카오 이모티콘 스티커 생성기</h1>
+  <p>인물 사진을 업로드하면 16종 스티커 시트를 만들어드려요</p>
+</div>
+
+<div class="container">
+
+  <!-- Upload -->
+  <div class="upload-section">
+    <h2>📷 인물 사진 업로드</h2>
+    <div class="upload-zone" id="uploadZone">
+      <div class="icon">🖼️</div>
+      <strong>사진을 드래그하거나 클릭하여 업로드</strong>
+      <p>JPG, PNG 형식 지원 · 정면 얼굴 사진 권장</p>
+    </div>
+    <input type="file" id="fileInput" accept="image/*">
+
+    <div class="preview-row">
+      <div class="preview-box" id="previewBox">
+        <img id="previewImg" alt="미리보기">
+      </div>
+      <div class="preview-info" id="previewInfo">
+        <div class="filename" id="previewFilename"></div>
+        <div class="hint">✅ 사진이 로드되었습니다.<br>얼굴이 캐릭터 얼굴로 자동 적용됩니다.</div>
+        <button class="btn-change" onclick="document.getElementById('fileInput').click()">📂 다른 사진 선택</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="controls">
+    <button class="btn-main" id="btnGenerate" onclick="generateSheet()">
+      ✨ 스티커 시트 생성하기
+    </button>
+    <button class="btn-dl" id="btnDownload" onclick="downloadSheet()">
+      ⬇️ PNG 다운로드
+    </button>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-step" id="progressStep">준비 중...</div>
+    <div class="progress-label" id="progressLabel"></div>
+    <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
+  </div>
+
+  <!-- Output -->
+  <div class="sheet-section" id="sheetSection">
+    <h2>🎉 완성된 스티커 시트</h2>
+    <div id="modeBadge"></div>
+    <div class="canvas-wrap">
+      <canvas id="stickerCanvas"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ================================================================
+// CONFIG
+// ================================================================
+const SHEET = 2400, COLS = 4, ROWS = 4;
+const PAD = 30, GAP = 20;
+const CELL = Math.floor((SHEET - PAD * 2 - GAP * (COLS - 1)) / COLS); // 570
+
+const EMOTICONS = [
+  { id:0,  text:'안녕하세요!',       mini:['✨','👋'], accent:[255,180,190], expr:'bigSmile',  prop:'wave',      arm:'right-up' },
+  { id:1,  text:'식사 챙기셨어요?',  mini:['☕','♥'],  accent:[255,213,170], expr:'warmSmile', prop:'coffee',    arm:'both' },
+  { id:2,  text:'확인해볼게요',       mini:['🔍','📄'], accent:[200,220,255], expr:'focus',     prop:'magnifier', arm:'right' },
+  { id:3,  text:'제가 챙길게요',      mini:['✅','☝️'], accent:[180,240,200], expr:'confident', prop:'clipboard', arm:'right' },
+  { id:4,  text:'잠깐 시간 괜찮으세요?', mini:['⏰','🙏'], accent:[255,240,180], expr:'polite',    prop:'clock',     arm:'right' },
+  { id:5,  text:'곧 연락드릴게요',    mini:['📱','💬'], accent:[220,200,255], expr:'talking',   prop:'phone',     arm:'right' },
+  { id:6,  text:'서류만 준비해주세요', mini:['📋','✨'], accent:[255,230,200], expr:'guide',     prop:'documents', arm:'right' },
+  { id:7,  text:'접수 완료!',          mini:['👍','🎉'], accent:[255,200,220], expr:'thumbsUp',  prop:'stamp',     arm:'right' },
+  { id:8,  text:'처리 중이에요',       mini:['⚙️','💻'], accent:[200,230,255], expr:'focused',   prop:'tablet',    arm:'both' },
+  { id:9,  text:'좋은 소식이에요!',    mini:['🌟','💛'], accent:[255,245,170], expr:'excited',   prop:'fists',     arm:'both-up' },
+  { id:10, text:'감사드립니다',        mini:['🙏','💙'], accent:[200,240,230], expr:'grateful',  prop:'pray',      arm:'both-center' },
+  { id:11, text:'생일 축하드려요!',    mini:['🎂','🎊'], accent:[255,210,230], expr:'celebrate', prop:'cake',      arm:'both' },
+  { id:12, text:'오늘도 힘내세요',     mini:['💪','⭐'], accent:[255,220,180], expr:'cheer',     prop:'fist',      arm:'right-up' },
+  { id:13, text:'빠른 회복 바랍니다', mini:['💗','🌸'], accent:[255,220,230], expr:'comfort',   prop:'flowers',   arm:'right' },
+  { id:14, text:'편안한 주말 되세요', mini:['☕','🌙'], accent:[220,210,250], expr:'relax',     prop:'mug',       arm:'both' },
+  { id:15, text:'축하드립니다!',       mini:['👏','🎊'], accent:[255,215,170], expr:'clap',      prop:'clap',      arm:'both' },
+];
+
+// ================================================================
+// STATE
+// ================================================================
+let uploadedPhoto = null;    // HTMLImageElement
+let photoDataURL  = null;    // string (data URL)
+
+// ================================================================
+// UPLOAD HANDLERS
+// ================================================================
+const uploadZone = document.getElementById('uploadZone');
+const fileInput  = document.getElementById('fileInput');
+
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.classList.remove('dragover');
+  const f = e.dataTransfer.files[0];
+  if (f) loadFile(f);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadFile(fileInput.files[0]); });
+
+function loadFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    photoDataURL = e.target.result;
+    const img = new Image();
+    img.onload = () => {
+      uploadedPhoto = img;
+      document.getElementById('previewImg').src = photoDataURL;
+      document.getElementById('previewFilename').textContent = file.name;
+      document.getElementById('previewBox').style.display = 'block';
+      document.getElementById('previewInfo').style.display = 'block';
+    };
+    img.src = photoDataURL;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ================================================================
+// PROGRESS
+// ================================================================
+function setProgress(step, label, pct) {
+  document.getElementById('progressStep').textContent  = step;
+  document.getElementById('progressLabel').textContent = label;
+  document.getElementById('progressBar').style.width   = pct + '%';
+}
+
+function showProgress(show) {
+  document.getElementById('progressWrap').style.display = show ? 'block' : 'none';
+}
+
+// ================================================================
+// MAIN GENERATE
+// ================================================================
+async function generateSheet() {
+  document.getElementById('btnGenerate').disabled = true;
+  document.getElementById('btnDownload').style.display = 'none';
+  document.getElementById('sheetSection').style.display = 'none';
+  showProgress(true);
+
+  const canvas = document.getElementById('stickerCanvas');
+  canvas.width  = SHEET;
+  canvas.height = SHEET;
+  const ctx = canvas.getContext('2d');
+
+  // Background
+  ctx.fillStyle = 'rgb(252,248,242)';
+  ctx.fillRect(0, 0, SHEET, SHEET);
+
+  // Face image for photo mode
+  let faceCanvas = null;
+  if (uploadedPhoto) {
+    faceCanvas = prepareFaceCanvas(uploadedPhoto);
+  }
+
+  for (let i = 0; i < 16; i++) {
+    const em = EMOTICONS[i];
+    const col = i % COLS, row = Math.floor(i / COLS);
+    const x = PAD + col * (CELL + GAP);
+    const y = PAD + row * (CELL + GAP);
+
+    setProgress(
+      `[${String(i+1).padStart(2,'0')}/16] ${em.text}`,
+      '스티커 그리는 중...',
+      Math.round((i / 16) * 90)
+    );
+
+    // Allow repaint
+    await tick();
+    drawStickerCell(ctx, em, x, y, CELL, faceCanvas);
+  }
+
+  setProgress('스티커 시트 완성!', '모든 스티커가 생성되었습니다 🎉', 100);
+  await tick();
+
+  showProgress(false);
+  document.getElementById('sheetSection').style.display = 'block';
+  document.getElementById('btnDownload').style.display  = 'block';
+  document.getElementById('btnGenerate').disabled = false;
+
+  // Mode badge
+  const badge = document.getElementById('modeBadge');
+  if (uploadedPhoto) {
+    badge.innerHTML = '<span class="mode-badge mode-photo">📷 사진 기반 캐릭터</span>';
+  } else {
+    badge.innerHTML = '<span class="mode-badge mode-demo">🎨 데모 캐릭터 (사진 없음)</span>';
+  }
+}
+
+function tick() { return new Promise(r => setTimeout(r, 30)); }
+
+// ================================================================
+// FACE CANVAS PREPARATION
+// ================================================================
+function prepareFaceCanvas(img) {
+  // Crop a square from upper-center portion of the photo (face area)
+  const src = img;
+  const sw = src.naturalWidth, sh = src.naturalHeight;
+
+  // Take center 70% width, top 65% of height
+  const cropW = sw * 0.70;
+  const cropH = sh * 0.65;
+  const cropX = (sw - cropW) / 2;
+  const cropY = sh * 0.03; // slight top offset
+
+  const size = 512;
+  const fc = document.createElement('canvas');
+  fc.width = fc.height = size;
+  const fctx = fc.getContext('2d');
+
+  // Circular clip
+  fctx.beginPath();
+  fctx.arc(size/2, size/2, size/2, 0, Math.PI*2);
+  fctx.clip();
+
+  fctx.drawImage(src, cropX, cropY, cropW, cropH, 0, 0, size, size);
+  return fc;
+}
+
+// ================================================================
+// DRAW ONE STICKER CELL
+// ================================================================
+function drawStickerCell(ctx, em, x, y, cell, faceCanvas) {
+  const cx = x + cell/2, cy = y + cell/2;
+  const R  = cell / 2 - 8;   // sticker circle radius
+  const bw = 14;              // border width
+
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  // -- Shadow --
+  ctx.save();
+  ctx.shadowColor  = 'rgba(0,0,0,0.12)';
+  ctx.shadowBlur   = 18;
+  ctx.shadowOffsetX = 6; ctx.shadowOffsetY = 6;
+  ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI*2);
+  ctx.fillStyle = 'white'; ctx.fill();
+  ctx.restore();
+
+  // -- Accent pastel fill --
+  ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI*2);
+  const [ar,ag,ab] = em.accent;
+  ctx.fillStyle = `rgba(${ar},${ag},${ab},0.22)`;
+  ctx.fill();
+
+  // -- White sticker border --
+  ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI*2);
+  ctx.strokeStyle = 'white'; ctx.lineWidth = bw * 2;
+  ctx.stroke();
+
+  // -- Clip to circle for character drawing --
+  ctx.save();
+  ctx.beginPath(); ctx.arc(0, 0, R - bw, 0, Math.PI*2);
+  ctx.clip();
+
+  drawCharacter(ctx, em, cell, R - bw, faceCanvas);
+
+  ctx.restore(); // end clip
+
+  // -- Korean text (overlapping head top) --
+  const textY = -R + R * 0.22;
+  drawKoreanText(ctx, em.text, 0, textY, cell);
+
+  // -- Mini emoji decorations (top corners) --
+  drawCornerDeco(ctx, em.accent, R);
+
+  ctx.restore(); // end translate
+}
+
+// ================================================================
+// CHARACTER DRAWING
+// ================================================================
+function drawCharacter(ctx, em, cell, clipR, faceCanvas) {
+  const scale = clipR / 200; // normalise around radius 200
+  function s(v) { return v * scale; }
+
+  // Body center  relative to circle center
+  const bodyCY = s(60);
+  const headCY = s(-40);
+  const headRx = s(78), headRy = s(72);
+
+  // ── Body (Navy Suit) ──
+  ctx.save();
+  ctx.beginPath();
+  ellipse(ctx, 0, bodyCY + s(30), s(90), s(75));
+  ctx.fillStyle = '#1E3A6E'; ctx.fill();
+
+  // Shirt (light beige strip)
+  ctx.beginPath();
+  ctx.fillStyle = '#EDE5D0';
+  ellipse(ctx, 0, bodyCY + s(20), s(32), s(50));
+  ctx.fill();
+
+  // Suit lapels (darker navy triangles)
+  for (let side of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(0, bodyCY - s(5));
+    ctx.lineTo(side * s(32), bodyCY - s(18));
+    ctx.lineTo(side * s(20), bodyCY + s(28));
+    ctx.closePath();
+    ctx.fillStyle = '#16305A'; ctx.fill();
+  }
+  ctx.restore();
+
+  // ── Neck ──
+  ctx.save();
+  ctx.beginPath();
+  ctx.fillStyle = '#EAC88A';
+  ellipse(ctx, 0, headCY + headRy * 0.9, s(20), s(22));
+  ctx.fill();
+  ctx.restore();
+
+  // ── Head ──
+  ctx.save();
+  ctx.beginPath();
+  ellipse(ctx, 0, headCY, headRx, headRy);
+  ctx.fillStyle = '#EAC88A'; ctx.fill();
+  ctx.restore();
+
+  // ── Ears ──
+  const earY = headCY + s(5);
+  const earR = s(16);
+  for (let side of [-1, 1]) {
+    ctx.save();
+    ctx.beginPath();
+    ellipse(ctx, side * (headRx - s(4)), earY, earR, earR * 0.85);
+    ctx.fillStyle = '#DFB87A'; ctx.fill();
+    ctx.restore();
+  }
+
+  // ── Hair (dark, neat) ──
+  ctx.save();
+  // Main hair mass
+  ctx.beginPath();
+  ellipse(ctx, 0, headCY - headRy * 0.3, headRx * 1.02, headRy * 0.78);
+  ctx.fillStyle = '#2A1A0A'; ctx.fill();
+
+  // Side hair
+  for (let side of [-1, 1]) {
+    ctx.beginPath();
+    ctx.ellipse(side * headRx * 0.78, headCY - s(10), s(22), s(40), 0, 0, Math.PI*2);
+    ctx.fillStyle = '#2A1A0A'; ctx.fill();
+  }
+
+  // Fringe detail
+  ctx.beginPath();
+  ctx.ellipse(0, headCY - headRy * 0.62, headRx * 0.72, s(18), 0, 0, Math.PI*2);
+  ctx.fillStyle = '#3A2510'; ctx.fill();
+
+  // Slight grey at temples (middle-aged look)
+  for (let side of [-1, 1]) {
+    ctx.beginPath();
+    ctx.ellipse(side * headRx * 0.72, headCY - s(25), s(8), s(14), 0, 0, Math.PI*2);
+    ctx.fillStyle = '#888880'; ctx.fill();
+  }
+  ctx.restore();
+
+  // ── Face photo or drawn face ──
+  if (faceCanvas) {
+    // Paste face photo in oval
+    ctx.save();
+    ctx.beginPath();
+    ellipse(ctx, 0, headCY + s(8), headRx * 0.78, headRy * 0.82);
+    ctx.clip();
+    const fw = headRx * 1.56, fh = headRy * 1.64;
+    ctx.drawImage(faceCanvas, -fw/2, headCY + s(8) - fh/2, fw, fh);
+    ctx.restore();
+  } else {
+    // Drawn face
+    drawFaceDetails(ctx, headCY, headRx, headRy, em, scale);
+  }
+
+  // ── Expression overlays (always drawn) ──
+  drawExpressionOverlays(ctx, headCY, headRx, headRy, em, scale);
+
+  // ── Props ──
+  drawProp(ctx, em, bodyCY, headCY, headRy, scale);
+}
+
+// ── Drawn face (no photo) ──
+function drawFaceDetails(ctx, hcy, hrx, hry, em, s) {
+  // Eyebrows
+  const browY = hcy - s(16);
+  for (let side of [-1, 1]) {
+    const bx = side * hrx * 0.36;
+    ctx.save();
+    ctx.strokeStyle = '#2A1A0A'; ctx.lineWidth = s(3.5); ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(bx - s(16), browY + (em.expr==='worried' ? -s(4) : s(2)));
+    ctx.quadraticCurveTo(bx, browY - s(4), bx + s(16), browY + (em.expr==='worried' ? -s(4) : s(2)));
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Eyes
+  const eyeY = hcy + s(2);
+  const eyeRx = s(13), eyeRy = em.expr==='excited'||em.expr==='celebrate' ? s(15) : s(12);
+  for (let side of [-1, 1]) {
+    const ex = side * hrx * 0.36;
+    // White
+    ctx.beginPath(); ellipse(ctx, ex, eyeY, eyeRx, eyeRy);
+    ctx.fillStyle = 'white'; ctx.fill();
+    // Iris
+    ctx.beginPath(); ellipse(ctx, ex, eyeY + s(2), eyeRx * 0.7, eyeRy * 0.7);
+    ctx.fillStyle = '#1A0A00'; ctx.fill();
+    // Highlight
+    ctx.beginPath(); ctx.arc(ex + eyeRx * 0.25, eyeY - eyeRy * 0.2, s(4), 0, Math.PI*2);
+    ctx.fillStyle = 'white'; ctx.fill();
+    // Lower eyelid for happy
+    if (['bigSmile','excited','celebrate','thumbsUp'].includes(em.expr)) {
+      ctx.save(); ctx.strokeStyle='#C8A070'; ctx.lineWidth=s(2);
+      ctx.beginPath();
+      ctx.arc(ex, eyeY + eyeRy * 0.4, eyeRx * 0.7, 0, Math.PI);
+      ctx.stroke(); ctx.restore();
+    }
+  }
+
+  // Nose
+  const noseY = hcy + s(22);
+  ctx.save(); ctx.strokeStyle='#C89060'; ctx.lineWidth=s(2); ctx.lineCap='round';
+  ctx.beginPath();
+  ctx.moveTo(-s(6), noseY); ctx.lineTo(0, noseY + s(4)); ctx.lineTo(s(6), noseY);
+  ctx.stroke(); ctx.restore();
+
+  // Mouth
+  drawMouth(ctx, hcy, hrx, em, s);
+}
+
+function drawMouth(ctx, hcy, hrx, em, s) {
+  const mouthY = hcy + s(38);
+  ctx.save(); ctx.lineCap = 'round';
+
+  if (['bigSmile','excited','celebrate','thumbsUp','cheer'].includes(em.expr)) {
+    // Big open smile with teeth
+    ctx.beginPath();
+    ctx.moveTo(-s(20), mouthY);
+    ctx.quadraticCurveTo(0, mouthY + s(18), s(20), mouthY);
+    ctx.fillStyle = '#CC4444'; ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-s(18), mouthY + s(2));
+    ctx.quadraticCurveTo(0, mouthY + s(6), s(18), mouthY + s(2));
+    ctx.fillStyle = 'white'; ctx.fill();
+    // Smile lines
+    ctx.strokeStyle = '#AA3333'; ctx.lineWidth = s(2);
+    ctx.beginPath();
+    ctx.moveTo(-s(20), mouthY); ctx.quadraticCurveTo(0, mouthY + s(18), s(20), mouthY);
+    ctx.stroke();
+  } else if (['warmSmile','guide','relax'].includes(em.expr)) {
+    ctx.strokeStyle = '#AA5544'; ctx.lineWidth = s(3.5);
+    ctx.beginPath();
+    ctx.moveTo(-s(15), mouthY);
+    ctx.quadraticCurveTo(0, mouthY + s(12), s(15), mouthY);
+    ctx.stroke();
+  } else if (['focus','focused'].includes(em.expr)) {
+    ctx.strokeStyle = '#996655'; ctx.lineWidth = s(3);
+    ctx.beginPath();
+    ctx.moveTo(-s(10), mouthY + s(2)); ctx.lineTo(s(10), mouthY + s(2));
+    ctx.stroke();
+  } else if (['polite','grateful','comfort'].includes(em.expr)) {
+    ctx.strokeStyle = '#AA5544'; ctx.lineWidth = s(3);
+    ctx.beginPath();
+    ctx.moveTo(-s(10), mouthY);
+    ctx.quadraticCurveTo(0, mouthY + s(8), s(10), mouthY);
+    ctx.stroke();
+  } else if (em.expr === 'talking') {
+    ctx.beginPath();
+    ellipse(ctx, 0, mouthY + s(3), s(10), s(8));
+    ctx.fillStyle = '#CC4444'; ctx.fill();
+  } else if (em.expr === 'confident') {
+    ctx.strokeStyle = '#AA5544'; ctx.lineWidth = s(3.5);
+    ctx.beginPath();
+    ctx.moveTo(-s(16), mouthY);
+    ctx.quadraticCurveTo(0, mouthY + s(13), s(16), mouthY);
+    ctx.stroke();
+  } else {
+    ctx.strokeStyle = '#AA5544'; ctx.lineWidth = s(3);
+    ctx.beginPath();
+    ctx.moveTo(-s(12), mouthY);
+    ctx.quadraticCurveTo(0, mouthY + s(9), s(12), mouthY);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ── Expression overlays (blush, stars, etc.) ──
+function drawExpressionOverlays(ctx, hcy, hrx, hry, em, s) {
+  // Blush cheeks
+  const blushExpr = ['bigSmile','warmSmile','excited','celebrate','grateful','comfort','relax','cheer'];
+  if (blushExpr.includes(em.expr)) {
+    const blushY = hcy + s(28);
+    for (let side of [-1, 1]) {
+      const bx = side * hrx * 0.55;
+      const g = ctx.createRadialGradient(bx, blushY, 0, bx, blushY, s(20));
+      g.addColorStop(0, 'rgba(255,140,120,0.45)');
+      g.addColorStop(1, 'rgba(255,140,120,0)');
+      ctx.save(); ctx.beginPath();
+      ellipse(ctx, bx, blushY, s(20), s(13));
+      ctx.fillStyle = g; ctx.fill(); ctx.restore();
+    }
+  }
+
+  // Sparkles above head for certain emotions
+  if (['excited','bigSmile','celebrate','thumbsUp'].includes(em.expr)) {
+    ctx.save(); ctx.fillStyle = '#FFD700';
+    const sparkY = hcy - hry - s(8);
+    drawStar(ctx, -hrx*0.6, sparkY, s(10));
+    drawStar(ctx, hrx * 0.6, sparkY, s(8));
+    ctx.restore();
+  }
+
+  // Sweat drop for polite/nervous
+  if (em.expr === 'polite') {
+    ctx.save(); ctx.fillStyle = '#A0D0FF';
+    ctx.beginPath();
+    const sx = hrx * 0.72, sy = hcy - hry * 0.3;
+    ctx.moveTo(sx, sy - s(12));
+    ctx.quadraticCurveTo(sx + s(8), sy, sx, sy + s(6));
+    ctx.quadraticCurveTo(sx - s(8), sy, sx, sy - s(12));
+    ctx.fill(); ctx.restore();
+  }
+
+  // Exclamation / focus marks
+  if (em.expr === 'focused') {
+    ctx.save(); ctx.font = `bold ${s(18)}px sans-serif`;
+    ctx.fillStyle = '#3366CC';
+    ctx.fillText('...', hrx * 0.6, hcy - hry * 0.5);
+    ctx.restore();
+  }
+}
+
+function drawStar(ctx, cx, cy, r) {
+  ctx.save(); ctx.translate(cx, cy);
+  ctx.beginPath();
+  for (let i = 0; i < 5; i++) {
+    const a1 = (Math.PI * 2 * i) / 5 - Math.PI/2;
+    const a2 = a1 + Math.PI/5;
+    if (i === 0) ctx.moveTo(Math.cos(a1)*r, Math.sin(a1)*r);
+    else ctx.lineTo(Math.cos(a1)*r, Math.sin(a1)*r);
+    ctx.lineTo(Math.cos(a2)*r*0.4, Math.sin(a2)*r*0.4);
+  }
+  ctx.closePath(); ctx.fill(); ctx.restore();
+}
+
+// ================================================================
+// PROPS
+// ================================================================
+function drawProp(ctx, em, bodyCY, headCY, headRy, s) {
+  const armY   = headCY + headRy + s(10);
+  const sideX  = s(75);
+
+  ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+  switch (em.prop) {
+    case 'wave': {
+      // Right arm raised
+      ctx.strokeStyle = '#EAC88A'; ctx.lineWidth = s(14);
+      ctx.beginPath();
+      ctx.moveTo(sideX * 0.6, armY);
+      ctx.quadraticCurveTo(sideX * 1.1, armY - s(40), sideX * 1.0, armY - s(80));
+      ctx.stroke();
+      // Hand
+      ctx.beginPath(); ctx.arc(sideX * 1.0, armY - s(80), s(14), 0, Math.PI*2);
+      ctx.fillStyle = '#EAC88A'; ctx.fill();
+      // Fingers (3 lines)
+      ctx.strokeStyle = '#D4A870'; ctx.lineWidth = s(4);
+      for (let f = -1; f <= 1; f++) {
+        ctx.beginPath();
+        ctx.moveTo(sideX * 1.0 + f * s(6), armY - s(80));
+        ctx.lineTo(sideX * 1.0 + f * s(8), armY - s(95));
+        ctx.stroke();
+      }
+      break;
+    }
+    case 'coffee': {
+      // Right arm holding cup
+      drawArm(ctx, sideX, armY, s(20), s(28), '#EAC88A', s);
+      // Cup
+      const cx2 = sideX + s(24), cy2 = armY + s(28);
+      ctx.beginPath(); roundRect(ctx, cx2 - s(14), cy2 - s(22), s(28), s(36), s(5));
+      ctx.fillStyle = '#E06020'; ctx.fill();
+      ctx.beginPath(); roundRect(ctx, cx2 - s(10), cy2 - s(18), s(20), s(8), s(2));
+      ctx.fillStyle = '#5C3010'; ctx.fill();
+      // Handle
+      ctx.strokeStyle = '#B04010'; ctx.lineWidth = s(4);
+      ctx.beginPath(); ctx.arc(cx2 + s(14), cy2 + s(4), s(10), -Math.PI/2, Math.PI/2);
+      ctx.stroke();
+      // Steam
+      ctx.strokeStyle = 'rgba(180,180,180,0.6)'; ctx.lineWidth = s(3);
+      for (let w = -1; w <= 1; w++) {
+        ctx.beginPath();
+        ctx.moveTo(cx2 + w * s(7), cy2 - s(24));
+        ctx.quadraticCurveTo(cx2 + w*s(7) + s(5), cy2 - s(34), cx2 + w*s(7), cy2 - s(44));
+        ctx.stroke();
+      }
+      break;
+    }
+    case 'magnifier': {
+      drawArm(ctx, sideX, armY, s(15), s(20), '#EAC88A', s);
+      const mx = sideX + s(18), my = armY + s(10);
+      const mr = s(22);
+      ctx.strokeStyle = '#B0A020'; ctx.lineWidth = s(6);
+      ctx.beginPath(); ctx.arc(mx, my, mr, 0, Math.PI*2); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(mx + mr * 0.7, my + mr * 0.7);
+      ctx.lineTo(mx + mr * 1.6, my + mr * 1.6); ctx.stroke();
+      // Glass tint
+      ctx.beginPath(); ctx.arc(mx, my, mr - s(5), 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(200,220,255,0.3)'; ctx.fill();
+      break;
+    }
+    case 'clipboard': {
+      drawArm(ctx, sideX, armY, s(10), s(20), '#EAC88A', s);
+      const bx = sideX + s(12), by = armY + s(8);
+      roundedRect(ctx, bx - s(18), by - s(30), s(36), s(48), s(4), '#FFFFF0', '#C0B890', s(2));
+      // Clip
+      ctx.beginPath(); roundRect(ctx, bx - s(8), by - s(35), s(16), s(10), s(4));
+      ctx.fillStyle = '#888870'; ctx.fill();
+      // Lines
+      ctx.strokeStyle = '#C0B080'; ctx.lineWidth = s(2);
+      for (let li = 0; li < 3; li++) {
+        ctx.beginPath();
+        ctx.moveTo(bx - s(12), by - s(14) + li * s(10));
+        ctx.lineTo(bx + s(12), by - s(14) + li * s(10));
+        ctx.stroke();
+      }
+      // Check
+      ctx.strokeStyle = '#50C050'; ctx.lineWidth = s(3);
+      ctx.beginPath();
+      ctx.moveTo(bx - s(10), by - s(12)); ctx.lineTo(bx - s(4), by - s(6)); ctx.lineTo(bx + s(8), by - s(18));
+      ctx.stroke();
+      break;
+    }
+    case 'clock': {
+      drawArm(ctx, sideX, armY, s(15), s(20), '#EAC88A', s);
+      const ocx = sideX + s(20), ocy = armY + s(12);
+      ctx.beginPath(); ctx.arc(ocx, ocy, s(22), 0, Math.PI*2);
+      ctx.fillStyle = '#FFFFF0'; ctx.fill();
+      ctx.strokeStyle = '#888830'; ctx.lineWidth = s(5); ctx.stroke();
+      // Clock hands
+      ctx.strokeStyle = '#333320'; ctx.lineWidth = s(3);
+      ctx.beginPath(); ctx.moveTo(ocx, ocy); ctx.lineTo(ocx + s(10), ocy - s(8)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(ocx, ocy); ctx.lineTo(ocx - s(6), ocy + s(12)); ctx.stroke();
+      // Center dot
+      ctx.beginPath(); ctx.arc(ocx, ocy, s(3), 0, Math.PI*2);
+      ctx.fillStyle = '#333320'; ctx.fill();
+      break;
+    }
+    case 'phone': {
+      drawArm(ctx, sideX, armY, s(12), s(18), '#EAC88A', s);
+      const px = sideX + s(18), py = armY + s(10);
+      ctx.save(); ctx.translate(px, py); ctx.rotate(0.3);
+      roundedRect(ctx, -s(12), -s(22), s(24), s(44), s(6), '#2A2A38', '#484858', s(2));
+      ctx.beginPath(); roundRect(ctx, -s(9), -s(17), s(18), s(32), s(3));
+      ctx.fillStyle = '#80CFFF'; ctx.fill();
+      ctx.restore();
+      break;
+    }
+    case 'documents': {
+      drawArm(ctx, sideX, armY, s(10), s(20), '#EAC88A', s);
+      // Stack of papers
+      for (let pi = 2; pi >= 0; pi--) {
+        const off = pi * s(3);
+        roundedRect(ctx, sideX + s(2) - off, armY + s(5) - off, s(42), s(52), s(3),
+          pi===0?'#FFFFF8':'#F0F0E0', '#C0C0A0', s(1.5));
+      }
+      ctx.strokeStyle = '#B0B090'; ctx.lineWidth = s(2);
+      for (let li = 0; li < 3; li++) {
+        ctx.beginPath();
+        ctx.moveTo(sideX + s(8), armY + s(20) + li * s(10));
+        ctx.lineTo(sideX + s(36), armY + s(20) + li * s(10));
+        ctx.stroke();
+      }
+      break;
+    }
+    case 'stamp': {
+      // Thumbs up
+      drawArm(ctx, sideX, armY, s(10), s(10), '#EAC88A', s);
+      // Thumb
+      ctx.beginPath();
+      ctx.save(); ctx.translate(sideX + s(16), armY + s(8));
+      ctx.fillStyle = '#EAC88A';
+      roundRect(ctx, -s(10), -s(26), s(20), s(30), s(10));
+      ctx.fill();
+      ctx.restore();
+      // Fist
+      ctx.beginPath();
+      ctx.fillStyle = '#EAC88A';
+      ctx.save(); ctx.translate(sideX + s(16), armY + s(20));
+      roundRect(ctx, -s(16), -s(8), s(32), s(22), s(8));
+      ctx.fill(); ctx.restore();
+      break;
+    }
+    case 'tablet': {
+      ctx.strokeStyle = '#EAC88A'; ctx.lineWidth = s(12);
+      ctx.beginPath();
+      ctx.moveTo(-sideX * 0.4, armY - s(10));
+      ctx.lineTo(-sideX * 0.6, armY + s(28));
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(sideX * 0.4, armY - s(10));
+      ctx.lineTo(sideX * 0.6, armY + s(28));
+      ctx.stroke();
+      // Tablet
+      roundedRect(ctx, -s(40), armY + s(22), s(80), s(55), s(7), '#2A2A38', '#484858', s(3));
+      ctx.beginPath(); roundRect(ctx, -s(34), armY + s(28), s(68), s(42), s(4));
+      ctx.fillStyle = '#60B0E8'; ctx.fill();
+      // Chart on tablet
+      ctx.fillStyle = '#FFD020';
+      ctx.fillRect(-s(26), armY + s(44), s(12), s(20));
+      ctx.fillStyle = '#40C060';
+      ctx.fillRect(-s(10), armY + s(54), s(12), s(10));
+      ctx.fillStyle = '#F04040';
+      ctx.fillRect(s(6), armY + s(48), s(12), s(16));
+      break;
+    }
+    case 'fists': {
+      for (let side of [-1, 1]) {
+        ctx.strokeStyle = '#EAC88A'; ctx.lineWidth = s(12);
+        ctx.beginPath();
+        ctx.moveTo(side * sideX * 0.5, armY);
+        ctx.lineTo(side * sideX * 0.9, armY - s(55));
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.fillStyle = '#EAC88A';
+        roundRect(ctx, side * sideX * 0.9 - s(14), armY - s(80), s(28), s(24), s(8));
+        ctx.fill();
+      }
+      break;
+    }
+    case 'pray': {
+      // Both hands together center
+      ctx.strokeStyle = '#EAC88A'; ctx.lineWidth = s(12);
+      for (let side of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(side * s(35), armY);
+        ctx.lineTo(side * s(15), armY + s(38));
+        ctx.stroke();
+      }
+      // Pray hands
+      ctx.beginPath();
+      ctx.fillStyle = '#EAC88A';
+      roundRect(ctx, -s(22), armY + s(30), s(44), s(30), s(12));
+      ctx.fill();
+      ctx.strokeStyle = '#D4A870'; ctx.lineWidth = s(3);
+      ctx.beginPath(); ctx.moveTo(0, armY + s(30)); ctx.lineTo(0, armY + s(60)); ctx.stroke();
+      break;
+    }
+    case 'cake': {
+      drawArm(ctx, sideX * 0.7, armY, s(10), s(22), '#EAC88A', s);
+      const kx = sideX * 0.7 + s(10), ky = armY + s(26);
+      roundedRect(ctx, kx - s(24), ky - s(18), s(48), s(32), s(6), '#FFE0D0', '#F0A090', s(2));
+      // Frosting
+      ctx.beginPath(); roundRect(ctx, kx - s(22), ky - s(18), s(44), s(10), s(4));
+      ctx.fillStyle = '#FFC0B0'; ctx.fill();
+      // Candles
+      for (let ci = -1; ci <= 1; ci++) {
+        ctx.fillStyle = '#F0D040';
+        ctx.fillRect(kx + ci * s(13) - s(3), ky - s(30), s(6), s(14));
+        // Flame
+        ctx.save(); ctx.fillStyle = '#FF8020';
+        ctx.beginPath();
+        ctx.arc(kx + ci * s(13), ky - s(33), s(5), 0, Math.PI*2);
+        ctx.fill(); ctx.restore();
+      }
+      break;
+    }
+    case 'fist': {
+      ctx.strokeStyle = '#EAC88A'; ctx.lineWidth = s(12);
+      ctx.beginPath();
+      ctx.moveTo(sideX * 0.5, armY);
+      ctx.lineTo(sideX * 0.8, armY - s(40));
+      ctx.stroke();
+      ctx.beginPath(); ctx.fillStyle = '#EAC88A';
+      roundRect(ctx, sideX*0.8 - s(14), armY - s(60), s(28), s(22), s(8));
+      ctx.fill();
+      break;
+    }
+    case 'flowers': {
+      drawArm(ctx, sideX, armY, s(12), s(20), '#EAC88A', s);
+      const fx = sideX + s(16), fy = armY + s(14);
+      // Stem
+      ctx.strokeStyle = '#50A040'; ctx.lineWidth = s(4);
+      ctx.beginPath(); ctx.moveTo(fx, fy + s(16)); ctx.lineTo(fx, fy - s(20)); ctx.stroke();
+      // Flowers
+      const pColors = ['#FFB0C8','#FF80A8','#FFC0D8'];
+      for (let pi = 0; pi < 3; pi++) {
+        const ox = (pi-1) * s(14), oy = -pi * s(10) - s(10);
+        ctx.fillStyle = pColors[pi];
+        for (let pet = 0; pet < 5; pet++) {
+          const a = (Math.PI*2 * pet / 5);
+          ctx.beginPath();
+          ctx.arc(fx + ox + Math.cos(a)*s(8), fy + oy + Math.sin(a)*s(8), s(7), 0, Math.PI*2);
+          ctx.fill();
+        }
+        ctx.beginPath(); ctx.arc(fx + ox, fy + oy, s(5), 0, Math.PI*2);
+        ctx.fillStyle = '#FFE070'; ctx.fill();
+      }
+      break;
+    }
+    case 'mug': {
+      // Both hands holding mug
+      for (let side of [-1, 1]) {
+        ctx.strokeStyle = '#EAC88A'; ctx.lineWidth = s(11);
+        ctx.beginPath();
+        ctx.moveTo(side * s(30), armY);
+        ctx.lineTo(side * s(20), armY + s(32));
+        ctx.stroke();
+      }
+      // Mug
+      roundedRect(ctx, -s(22), armY + s(28), s(44), s(38), s(8), '#9A6440', '#705030', s(3));
+      // Handle
+      ctx.strokeStyle = '#705030'; ctx.lineWidth = s(6);
+      ctx.beginPath(); ctx.arc(s(22), armY + s(47), s(12), -Math.PI/2, Math.PI/2); ctx.stroke();
+      // Steam
+      ctx.strokeStyle = 'rgba(180,180,180,0.5)'; ctx.lineWidth = s(3);
+      for (let sw = -1; sw <= 1; sw++) {
+        ctx.beginPath();
+        ctx.moveTo(sw * s(10), armY + s(24));
+        ctx.quadraticCurveTo(sw*s(10)+s(5), armY+s(14), sw*s(10), armY+s(4));
+        ctx.stroke();
+      }
+      break;
+    }
+    case 'clap': {
+      for (let side of [-1, 1]) {
+        ctx.strokeStyle = '#EAC88A'; ctx.lineWidth = s(12);
+        ctx.beginPath();
+        ctx.moveTo(side * s(60), armY - s(20));
+        ctx.lineTo(side * s(25), armY + s(18));
+        ctx.stroke();
+        ctx.beginPath(); ctx.fillStyle = '#EAC88A';
+        roundRect(ctx, side*s(60) - s(16), armY - s(40), s(32), s(22), s(8));
+        ctx.fill();
+      }
+      break;
+    }
+  }
+
+  ctx.restore();
+}
+
+function drawArm(ctx, tx, ty, extX, extY, color, s) {
+  ctx.strokeStyle = color; ctx.lineWidth = s(11);
+  ctx.beginPath();
+  ctx.moveTo(tx * 0.55, ty);
+  ctx.quadraticCurveTo(tx * 0.8, ty + extY * 0.5, tx + extX, ty + extY);
+  ctx.stroke();
+}
+
+// ================================================================
+// KOREAN TEXT
+// ================================================================
+function drawKoreanText(ctx, text, x, y, cell) {
+  const fontSize = Math.round(cell * 0.085);
+  ctx.save();
+
+  // Try Korean font then fallback
+  ctx.font = `800 ${fontSize}px 'Nanum Gothic', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif`;
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Dark brown stroke (outline)
+  ctx.lineWidth   = 9;
+  ctx.strokeStyle = '#3D1F00';
+  ctx.lineJoin    = 'round';
+  ctx.strokeText(text, x, y);
+
+  // Bright fill
+  ctx.fillStyle = '#FFFCE8';
+  ctx.fillText(text, x, y);
+
+  ctx.restore();
+}
+
+// ================================================================
+// CORNER DECORATIONS
+// ================================================================
+function drawCornerDeco(ctx, accent, R) {
+  const [ar, ag, ab] = accent;
+  const m = R * 0.12;
+  const deco = [
+    { x: -R + m * 2.2, y: -R + m * 2.2 },
+    { x:  R - m * 2.2, y: -R + m * 2.2 },
+  ];
+
+  ctx.save();
+  deco.forEach((d, i) => {
+    const gr = ctx.createRadialGradient(d.x, d.y, 0, d.x, d.y, m * 2);
+    gr.addColorStop(0, `rgba(${ar},${ag},${ab},0.9)`);
+    gr.addColorStop(1, `rgba(${ar},${ag},${ab},0)`);
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, m * 2, 0, Math.PI * 2);
+    ctx.fillStyle = gr;
+    ctx.fill();
+
+    // Small star / heart
+    ctx.fillStyle = `rgb(${Math.max(0,ar-40)},${Math.max(0,ag-40)},${Math.max(0,ab-40)})`;
+    ctx.font = `${Math.round(m * 1.6)}px sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const symbols = ['✦','♥','★','✿','◆','♦','❋','✸'];
+    ctx.fillText(symbols[Math.floor(i * 4) % symbols.length], d.x, d.y);
+  });
+  ctx.restore();
+}
+
+// ================================================================
+// CANVAS HELPERS
+// ================================================================
+function ellipse(ctx, cx, cy, rx, ry) {
+  ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  if (ctx.roundRect) {
+    ctx.roundRect(x, y, w, h, r);
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+}
+
+function roundedRect(ctx, x, y, w, h, r, fill, stroke, sw) {
+  ctx.beginPath(); roundRect(ctx, x, y, w, h, r);
+  if (fill)   { ctx.fillStyle   = fill;   ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = sw; ctx.stroke(); }
+}
+
+// ================================================================
+// DOWNLOAD
+// ================================================================
+function downloadSheet() {
+  const canvas = document.getElementById('stickerCanvas');
+  const a = document.createElement('a');
+  a.href     = canvas.toDataURL('image/png');
+  a.download = 'kakao_sticker_sheet.png';
+  a.click();
+}
+</script>
+</body>
+</html>
